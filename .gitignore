@@ -28,3 +28,4 @@ android/local.properties
 # iOS (kept minimal; Android-first project)
 ios/.generated/
 ios/Flutter/Generated.xcconfig
+.worktrees/
