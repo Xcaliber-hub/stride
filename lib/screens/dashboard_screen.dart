@@ -11,6 +11,7 @@ import '../utils/formatters.dart';
 import '../utils/stats_calculator.dart';
 import '../viewmodels/providers.dart';
 import '../widgets/glow_card.dart';
+import '../widgets/page_title.dart';
 import '../widgets/goal_progress_ring.dart';
 import '../widgets/history_section.dart';
 import '../widgets/section_header.dart';
@@ -105,8 +106,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           data: (record) {
             final progress = _progressOf(record, profile.dailyGoal);
             final name = profile.name.trim();
-            final greeting =
-                name.isEmpty ? _greeting() : '${_greeting()}, $name';
+            final date = Formatters.date(DateTime.now());
+            final subtitle = name.isEmpty ? date : '$name \u00b7 $date';
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -117,31 +118,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Semantics(
-                    header: true,
-                    child: Text(
-                      greeting,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Text(
-                    Formatters.date(DateTime.now()),
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: colorScheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: Semantics(
-                      label:
-                          '${Formatters.steps(record.steps)} of ${Formatters.steps(profile.dailyGoal)} steps',
-                      child: GoalProgressRing(
-                        steps: record.steps,
-                        goal: profile.dailyGoal,
+                  PageTitle(title: _greeting(), subtitle: subtitle),
+                  GlowCard(
+                    intensity: 0.9,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 28),
+                      child: Center(
+                        child: Semantics(
+                          label:
+                              '${Formatters.steps(record.steps)} of ${Formatters.steps(profile.dailyGoal)} steps',
+                          child: GoalProgressRing(
+                            steps: record.steps,
+                            goal: profile.dailyGoal,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -208,7 +198,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 1.05,
+                    childAspectRatio: 1.3,
                     children: [
                       StatCard(
                         label: 'Distance',

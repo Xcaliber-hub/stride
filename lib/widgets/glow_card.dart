@@ -5,6 +5,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../themes/app_theme.dart';
+
 /// A [Card] with light spilling out from behind it.
 ///
 /// A soft halo bleeds out around the edges and a flattened pool of light lands
@@ -17,7 +19,7 @@ class GlowCard extends StatelessWidget {
     required this.child,
     this.color,
     this.intensity = 1.0,
-    this.borderRadius = 24,
+    this.borderRadius = AppTheme.cardRadius,
     this.margin,
     this.clipBehavior,
   });
@@ -93,7 +95,7 @@ class _GlowPainter extends CustomPainter {
     canvas.drawRRect(
       rrect.inflate(2).shift(const Offset(0, 6)),
       Paint()
-        ..color = color.withValues(alpha: (dark ? 0.34 : 0.22) * intensity)
+        ..color = color.withValues(alpha: (dark ? 0.22 : 0.08) * intensity)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
     );
 
@@ -112,8 +114,8 @@ class _GlowPainter extends CustomPainter {
           Offset.zero,
           reach,
           [
-            spill.withValues(alpha: 0.55 * intensity),
-            spill.withValues(alpha: 0.20 * intensity),
+            spill.withValues(alpha: (dark ? 0.40 : 0.20) * intensity),
+            spill.withValues(alpha: (dark ? 0.14 : 0.07) * intensity),
             spill.withValues(alpha: 0),
           ],
           const [0, 0.55, 1],

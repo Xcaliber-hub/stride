@@ -1,4 +1,4 @@
-# stride
+# Smart Steps Tracker
 
 A privacy-friendly, open-source step counter for Android — tracks your daily steps, goals, stats, and achievements entirely on-device.
 
@@ -13,7 +13,7 @@ A privacy-friendly, open-source step counter for Android — tracks your daily s
 
 **Appearance**
 - System/light/dark themes, AMOLED black, optional wallpaper-based dynamic colors
-- Eight accent colors, adjustable text size, and optional navigation labels
+- Monochrome "Graphite" look by default, seven more accent colors, and adjustable text size
 - Animated glow beam riding around the floating navigation dock
 - Soft accent-coloured light glow behind the motivation, stat, and history cards
 
@@ -118,7 +118,7 @@ flutter run
 
    ```bash
    flutter run \
-     --dart-define=FIREBASE_API_KEY=YOUR_API_KEY \
+     --dart-define=FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY \
      --dart-define=FIREBASE_APP_ID=YOUR_ANDROID_APP_ID \
      --dart-define=FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID \
      --dart-define=FIREBASE_PROJECT_ID=YOUR_PROJECT_ID
@@ -131,11 +131,11 @@ flutter run
    or join with an invite code. Your Settings name is used as your group
    display name and updates your roster entries when changed; until a Settings
    name is set, the registration name is used. Group members see this name
-   whether or not step sharing is enabled. Sharing starts **off**. When enabled, Stride
-   writes only `steps` and `updatedAt` to each group; turning it off deletes
-   those documents. Foreground sensor changes sync immediately, and Android
-   WorkManager refreshes an opted-in total about every 15 minutes. A value
-   updated on a previous local calendar day appears as “Not shared today.”
+   whether or not step sharing is enabled. Sharing starts **off**. When enabled,
+   Stride writes only `steps` and `updatedAt` to each group; turning it off
+   deletes those documents. Foreground sensor changes sync immediately, and
+   Android WorkManager refreshes an opted-in total about every 15 minutes. A
+   value updated on a previous local calendar day appears as “Not shared today.”
 
 `firestore.rules` restricts group data to members, requires a valid invite for
 joining, prevents invite enumeration, and limits shared step documents to the
@@ -150,6 +150,12 @@ flutter build apk --debug
 See `android/app/build.gradle.kts` for the configured minSdk.
 
 ## Verification
+
+The verification record below applies to the original local-only baseline and
+does not cover the Firebase integration. For this update, the supplied config
+was validated and its Android package was checked against the Gradle application
+ID and namespace. Flutter/Dart are not installed in this workspace, so the
+Firebase changes could not be run through Flutter analysis, tests, or a build.
 
 Verified with **Flutter 3.47.7** (Dart 3.13.5):
 
@@ -171,10 +177,10 @@ Dependency notes:
 
 | Permission | Why |
 |---|---|
+| `INTERNET` | Firebase Authentication and Cloud Firestore when configured |
 | `ACTIVITY_RECOGNITION` | required to read the step-counter sensor |
 | `POST_NOTIFICATIONS` | reminders and achievement notifications |
 | `RECEIVE_BOOT_COMPLETED` | lets scheduled background work resume after a reboot |
-| `INTERNET` | Firebase Authentication and Cloud Firestore when configured |
 | `SCHEDULE_EXACT_ALARM` | declared; the app uses inexact alarms, so exact alarms are never requested |
 | `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_HEALTH` | persistent step tracking with an ongoing notification |
 

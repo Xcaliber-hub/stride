@@ -18,7 +18,7 @@ class GoalProgressRing extends StatelessWidget {
     super.key,
     required this.steps,
     required this.goal,
-    this.size = 220,
+    this.size = 240,
   });
 
   /// Steps recorded today.
@@ -48,7 +48,8 @@ class GoalProgressRing extends StatelessWidget {
             size: Size.square(size),
             painter: _RingPainter(
               progress: value,
-              trackColor: colorScheme.surfaceContainerHighest,
+              trackColor: colorScheme.surfaceContainerHigh,
+              haloColor: colorScheme.primary.withValues(alpha: 0.2),
               progressColor: colorScheme.primary,
             ),
             child: SizedBox.square(
@@ -77,13 +78,13 @@ class GoalProgressRing extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
+                      color: colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       Formatters.percent(value),
                       style: textTheme.labelLarge?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
+                        color: colorScheme.onSecondaryContainer,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -103,48 +104,54 @@ class _RingPainter extends CustomPainter {
   const _RingPainter({
     required this.progress,
     required this.trackColor,
+    required this.haloColor,
     required this.progressColor,
   });
 
   final double progress;
   final Color trackColor;
+  final Color haloColor;
   final Color progressColor;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const strokeWidth = 18.0;
+    const trackWidth = 24.0;
+    const arcWidth = 18.0;
+    const haloWidth = 30.0;
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = (min(size.width, size.height) - strokeWidth) / 2;
+    final radius = (min(size.width, size.height) - haloWidth) / 2;
+    final bounds = Rect.fromCircle(center: center, radius: radius);
 
     final trackPaint = Paint()
       ..color = trackColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
+      ..strokeWidth = trackWidth;
 
     canvas.drawCircle(center, radius, trackPaint);
 
     if (progress <= 0) return;
 
+    // A soft, wider outline sits under the solid arc.
+    final haloPaint = Paint()
+      ..color = haloColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = haloWidth
+      ..strokeCap = StrokeCap.round;
     final progressPaint = Paint()
       ..color = progressColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
+      ..strokeWidth = arcWidth
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -pi / 2,
-      2 * pi * progress,
-      false,
-      progressPaint,
-    );
+    canvas.drawArc(bounds, -pi / 2, 2 * pi * progress, false, haloPaint);
+    canvas.drawArc(bounds, -pi / 2, 2 * pi * progress, false, progressPaint);
   }
 
   @override
   bool shouldRepaint(covariant _RingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.trackColor != trackColor ||
+        oldDelegate.haloColor != haloColor ||
         oldDelegate.progressColor != progressColor;
   }
 }

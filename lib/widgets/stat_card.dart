@@ -7,10 +7,9 @@ import 'glow_card.dart';
 
 /// A small tappable card showing one headline metric.
 ///
-/// Vertical layout: [icon] in a tonal circle on top, [value] (large)
-/// beneath it, then [label] (caption) with the full card width available
-/// so labels never get awkwardly cropped. When [onTap] is provided the
-/// whole card ripples and is exposed to assistive tech as a button.
+/// Layout: a small [icon] and the [label] sit on top, with the large [value]
+/// anchored at the bottom of the card. When [onTap] is provided the whole
+/// card ripples and is exposed to assistive tech as a button.
 class StatCard extends StatelessWidget {
   /// Creates a stat card with [label], [value] and [icon].
   const StatCard({
@@ -28,7 +27,7 @@ class StatCard extends StatelessWidget {
   /// Formatted metric value, e.g. "5.2 km".
   final String value;
 
-  /// Icon shown in the tonal circle.
+  /// Icon shown next to the label.
   final IconData icon;
 
   /// Optional custom icon widget, used for the animated streak flame.
@@ -43,35 +42,45 @@ class StatCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     final content = Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: colorScheme.secondaryContainer,
-              shape: BoxShape.circle,
-            ),
-            child: iconWidget ??
-                Icon(icon, color: colorScheme.onSecondaryContainer),
+          Row(
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Center(
+                  child: iconWidget ??
+                      Icon(icon, size: 20, color: colorScheme.onSurface),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
             ),
-            maxLines: 2,
           ),
         ],
       ),

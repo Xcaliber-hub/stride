@@ -8,6 +8,7 @@ import '../models/achievement.dart';
 import '../utils/stats_calculator.dart';
 import '../viewmodels/providers.dart';
 import '../widgets/achievement_tile.dart';
+import '../widgets/page_title.dart';
 
 /// Achievements tab: unlockable milestones with live progress.
 class AchievementsScreen extends ConsumerWidget {
@@ -74,6 +75,7 @@ class AchievementsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const PageTitle(title: 'Awards'),
               Card(
                 color: colorScheme.primaryContainer,
                 child: Padding(

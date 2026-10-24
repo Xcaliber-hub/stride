@@ -8,6 +8,7 @@ import '../utils/formatters.dart';
 import '../utils/stats_calculator.dart';
 import '../viewmodels/providers.dart';
 import '../widgets/heatmap_calendar.dart';
+import '../widgets/page_title.dart';
 import '../widgets/section_header.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/streak_flame_icon.dart';
@@ -54,6 +55,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const PageTitle(title: 'Stats'),
           Center(
             child: Semantics(
               label: 'Statistics period',
@@ -142,7 +144,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 1.05,
+                    childAspectRatio: 1.3,
                     children: cards,
                   ),
                   const SizedBox(height: 24),

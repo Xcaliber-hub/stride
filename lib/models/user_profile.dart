@@ -28,7 +28,18 @@ class UserProfile {
   final bool dynamicColor;
   final int accentColor;
   final double fontScale;
-  final bool showNavigationLabels;
+
+  /// Version of the visual design the saved look settings were made for.
+  /// Profiles saved before the monochrome redesign (version 2) are moved to
+  /// the Graphite accent once when they are loaded.
+  final int designVersion;
+
+  /// Current design version.
+  static const int currentDesignVersion = 2;
+
+  /// ARGB of the default "Graphite" accent; keep in sync with
+  /// `AppTheme.graphite`.
+  static const int defaultAccentColor = 0xFF2B2B2B;
 
   // Notification toggles.
   final bool notificationsEnabled;
@@ -55,9 +66,9 @@ class UserProfile {
     this.themeMode = ThemeMode.system,
     this.amoledBlack = false,
     this.dynamicColor = false,
-    this.accentColor = 0xFFB08968,
+    this.accentColor = defaultAccentColor,
     this.fontScale = 1.0,
-    this.showNavigationLabels = true,
+    this.designVersion = currentDesignVersion,
     this.notificationsEnabled = true,
     this.morningMotivation = true,
     this.goalReachedAlert = true,
@@ -80,8 +91,8 @@ class UserProfile {
     bool? amoledBlack,
     bool? dynamicColor,
     int? accentColor,
+    int? designVersion,
     double? fontScale,
-    bool? showNavigationLabels,
     bool? notificationsEnabled,
     bool? morningMotivation,
     bool? goalReachedAlert,
@@ -103,8 +114,8 @@ class UserProfile {
       amoledBlack: amoledBlack ?? this.amoledBlack,
       dynamicColor: dynamicColor ?? this.dynamicColor,
       accentColor: accentColor ?? this.accentColor,
+      designVersion: designVersion ?? this.designVersion,
       fontScale: fontScale ?? this.fontScale,
-      showNavigationLabels: showNavigationLabels ?? this.showNavigationLabels,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       morningMotivation: morningMotivation ?? this.morningMotivation,
       goalReachedAlert: goalReachedAlert ?? this.goalReachedAlert,
@@ -131,8 +142,8 @@ class UserProfile {
       'amoledBlack': amoledBlack,
       'dynamicColor': dynamicColor,
       'accentColor': accentColor,
+      'designVersion': designVersion,
       'fontScale': fontScale,
-      'showNavigationLabels': showNavigationLabels,
       'notificationsEnabled': notificationsEnabled,
       'morningMotivation': morningMotivation,
       'goalReachedAlert': goalReachedAlert,
@@ -145,6 +156,9 @@ class UserProfile {
   }
 
   factory UserProfile.fromJson(Map<String, Object?> json) {
+    // Saved before the redesign: switch to the new default look once.
+    final migrateDesign =
+        ((json['designVersion'] as num?)?.toInt() ?? 1) < currentDesignVersion;
     Gender? gender;
     final g = json['gender'] as String?;
     if (g != null) {
@@ -180,9 +194,11 @@ class UserProfile {
       themeMode: themeMode,
       amoledBlack: (json['amoledBlack'] as bool?) ?? false,
       dynamicColor: (json['dynamicColor'] as bool?) ?? false,
-      accentColor: (json['accentColor'] as num?)?.toInt() ?? 0xFFB08968,
+      accentColor: migrateDesign
+          ? defaultAccentColor
+          : (json['accentColor'] as num?)?.toInt() ?? defaultAccentColor,
+      designVersion: currentDesignVersion,
       fontScale: (json['fontScale'] as num?)?.toDouble() ?? 1.0,
-      showNavigationLabels: (json['showNavigationLabels'] as bool?) ?? true,
       notificationsEnabled: (json['notificationsEnabled'] as bool?) ?? true,
       morningMotivation: (json['morningMotivation'] as bool?) ?? true,
       goalReachedAlert: (json['goalReachedAlert'] as bool?) ?? true,

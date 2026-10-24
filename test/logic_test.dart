@@ -18,7 +18,6 @@ void main() {
         dynamicColor: true,
         accentColor: 0xFF6750A4,
         fontScale: 1.15,
-        showNavigationLabels: false,
       );
       final restored = UserProfile.fromJson(profile.toJson());
       expect(restored.name, 'Aditya');
@@ -27,14 +26,27 @@ void main() {
       expect(restored.dynamicColor, isTrue);
       expect(restored.accentColor, 0xFF6750A4);
       expect(restored.fontScale, 1.15);
-      expect(restored.showNavigationLabels, isFalse);
 
       final legacy = UserProfile.fromJson({'dailyGoal': 7000});
       expect(legacy.name, '');
       expect(legacy.dailyGoal, 7000);
       expect(legacy.amoledBlack, isFalse);
       expect(legacy.fontScale, 1.0);
-      expect(legacy.showNavigationLabels, isTrue);
+    });
+
+    test('moves profiles saved before the redesign to the Graphite look', () {
+      final old = UserProfile.fromJson({
+        'accentColor': 0xFF6750A4,
+        'dailyGoal': 9000,
+      });
+      expect(old.accentColor, UserProfile.defaultAccentColor);
+      expect(old.designVersion, UserProfile.currentDesignVersion);
+      expect(old.dailyGoal, 9000);
+
+      // Once saved with the current version, a later accent choice sticks.
+      final saved = old.copyWith(accentColor: 0xFF6750A4).toJson();
+      final reloaded = UserProfile.fromJson(saved);
+      expect(reloaded.accentColor, 0xFF6750A4);
     });
   });
 

@@ -11,6 +11,7 @@ import '../models/day_record.dart';
 import '../services/firebase_service.dart';
 import '../services/group_service.dart';
 import '../viewmodels/providers.dart';
+import '../widgets/page_title.dart';
 
 class GroupsScreen extends ConsumerWidget {
   const GroupsScreen({super.key});
@@ -46,8 +47,10 @@ class _FirebaseUnavailable extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 120),
       children: [
-        Text('Friends & groups', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 20),
+        const PageTitle(
+          title: 'Groups',
+          subtitle: 'Friends and live step counts',
+        ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -155,8 +158,10 @@ class _AuthenticationPanelState extends State<_AuthenticationPanel> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 120),
       children: [
-        Text('Friends & groups', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 20),
+        const PageTitle(
+          title: 'Groups',
+          subtitle: 'Friends and live step counts',
+        ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -462,7 +467,10 @@ class _SignedInGroups extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Friends & groups', style: Theme.of(context).textTheme.headlineMedium),
+                  Semantics(
+                    header: true,
+                    child: Text('Groups', style: PageTitle.titleStyle(context)),
+                  ),
                   Text(
                     user.email ?? user.displayName ?? 'Signed in',
                     maxLines: 1,

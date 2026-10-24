@@ -10,6 +10,7 @@ import '../models/user_profile.dart';
 import '../themes/app_theme.dart';
 import '../utils/formatters.dart';
 import '../viewmodels/providers.dart';
+import '../widgets/page_title.dart';
 import '../widgets/section_header.dart';
 
 /// Settings tab: profile, appearance, notifications, reminders, backup, about.
@@ -447,6 +448,7 @@ class SettingsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const PageTitle(title: 'Settings'),
           const SectionHeader(title: 'Profile'),
           Card(
             child: Column(

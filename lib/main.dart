@@ -139,13 +139,11 @@ class StrideApp extends ConsumerWidget {
         theme: AppTheme.light(
           seedColor: seedColor,
           dynamicScheme: profile.dynamicColor ? lightDynamic : null,
-          showNavigationLabels: profile.showNavigationLabels,
         ),
         darkTheme: AppTheme.dark(
           seedColor: seedColor,
           dynamicScheme: profile.dynamicColor ? darkDynamic : null,
           amoledBlack: profile.amoledBlack,
-          showNavigationLabels: profile.showNavigationLabels,
         ),
         themeMode: profile.themeMode,
         builder: (context, child) {

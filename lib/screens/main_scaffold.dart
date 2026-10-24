@@ -138,24 +138,26 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               child: Center(
                 child: BeamBorder(
                   borderRadius: 36,
+                  palette: BeamPalette.mono,
+                  strength: 0.6,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(36),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainer
-                              .withValues(alpha: 0.85),
+                          color: colorScheme.surfaceContainerHigh
+                              .withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(36),
                           border: Border.all(
-                            color: colorScheme.outline.withValues(alpha: 0.1),
+                            color: colorScheme.outlineVariant,
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 28,
-                              offset: const Offset(0, 10),
+                              color: Colors.black.withValues(alpha: 0.14),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
@@ -223,9 +225,7 @@ class _PillNavItem extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            color: selected
-                ? colorScheme.secondaryContainer
-                : Colors.transparent,
+            color: selected ? colorScheme.inverseSurface : Colors.transparent,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -234,8 +234,8 @@ class _PillNavItem extends StatelessWidget {
                 selected ? data.selectedIcon : data.icon,
                 size: 22,
                 color: selected
-                    ? colorScheme.onSecondaryContainer
-                    : colorScheme.onSurfaceVariant,
+                    ? colorScheme.onInverseSurface
+                    : colorScheme.onSurface,
               ),
               if (selected) ...[
                 const SizedBox(width: 6),
@@ -244,7 +244,7 @@ class _PillNavItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.onSecondaryContainer,
+                    color: colorScheme.onInverseSurface,
                   ),
                 ),
               ],
