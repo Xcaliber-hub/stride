@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Smart Steps Tracker — a free and open-source step counter.
 
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'dashboard_screen.dart';
@@ -12,12 +10,14 @@ import 'stats_screen.dart';
 import 'achievements_screen.dart';
 import 'groups_screen.dart';
 import 'settings_screen.dart';
-import '../widgets/beam_border.dart';
+import '../widgets/floating_nav_bar.dart';
 
 /// Root shell hosting the five main tabs of the app.
 ///
-/// Keeps each tab mounted while animating between them, and uses a floating
-/// glassmorphic pill-shaped navigation dock with icons and labels.
+/// Keeps each tab mounted (so scroll position and state survive), cross-fades
+/// between them with Flowstate's fade + slight scale-in, and floats
+/// Flowstate's capsule navigation bar over the content. The bar slides away
+/// while scrolling down and returns on any upward scroll.
 class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});
 
@@ -25,22 +25,9 @@ class MainScaffold extends ConsumerStatefulWidget {
   ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
 
-class _NavItemData {
-  const _NavItemData({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-    required this.tooltip,
-  });
-
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-  final String tooltip;
-}
-
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
   int _index = 0;
+  bool _navVisible = true;
 
   static const List<Widget> _pages = <Widget>[
     DashboardScreen(),
@@ -50,55 +37,51 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     SettingsScreen(),
   ];
 
-  static const List<_NavItemData> _items = [
-    _NavItemData(
-      icon: Icons.dashboard_outlined,
-      selectedIcon: Icons.dashboard,
-      label: 'Home',
-      tooltip: 'Dashboard',
-    ),
-    _NavItemData(
-      icon: Icons.bar_chart_outlined,
-      selectedIcon: Icons.bar_chart,
-      label: 'Stats',
-      tooltip: 'Stats',
-    ),
-    _NavItemData(
-      icon: Icons.emoji_events_outlined,
-      selectedIcon: Icons.emoji_events,
-      label: 'Awards',
-      tooltip: 'Achievements',
-    ),
-    _NavItemData(
-      icon: Icons.groups_outlined,
-      selectedIcon: Icons.groups,
-      label: 'Groups',
-      tooltip: 'Friends and groups',
-    ),
-    _NavItemData(
-      icon: Icons.settings_outlined,
-      selectedIcon: Icons.settings,
-      label: 'Settings',
-      tooltip: 'Settings',
-    ),
+  static const List<NavTab> _tabs = [
+    NavTab(
+        icon: Icons.directions_walk_rounded,
+        label: 'Today',
+        tooltip: 'Dashboard'),
+    NavTab(
+        icon: Icons.bar_chart_rounded, label: 'Statistics', tooltip: 'Stats'),
+    NavTab(
+        icon: Icons.emoji_events_rounded,
+        label: 'Awards',
+        tooltip: 'Achievements'),
+    NavTab(
+        icon: Icons.groups_rounded,
+        label: 'Groups',
+        tooltip: 'Friends and groups'),
+    NavTab(
+        icon: Icons.settings_rounded, label: 'Settings', tooltip: 'Settings'),
   ];
 
-  void _onDestinationSelected(int index) {
-    HapticFeedback.selectionClick();
-    setState(() => _index = index);
+  void _select(int index) {
+    setState(() {
+      _index = index;
+      _navVisible = true;
+    });
+  }
+
+  bool _onScroll(UserScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+    final direction = notification.direction;
+    if (direction == ScrollDirection.reverse && _navVisible) {
+      setState(() => _navVisible = false);
+    } else if (direction == ScrollDirection.forward && !_navVisible) {
+      setState(() => _navVisible = true);
+    }
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       extendBody: true,
       body: Stack(
         children: [
-          // Pages fill the whole screen and stay mounted to preserve their
-          // state; inactive pages fade and slide out of view.
-          SafeArea(
-            bottom: false,
+          NotificationListener<UserScrollNotification>(
+            onNotification: _onScroll,
             child: Stack(
               children: [
                 for (var i = 0; i < _pages.length; i++)
@@ -109,15 +92,21 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                         excluding: _index != i,
                         child: AnimatedOpacity(
                           opacity: _index == i ? 1 : 0,
-                          duration: const Duration(milliseconds: 280),
-                          curve: Curves.easeInOutCubic,
-                          child: AnimatedSlide(
-                            offset: _index == i
-                                ? Offset.zero
-                                : const Offset(0.025, 0),
-                            duration: const Duration(milliseconds: 280),
-                            curve: Curves.easeInOutCubic,
-                            child: _pages[i],
+                          duration: _index == i
+                              ? const Duration(milliseconds: 320)
+                              : const Duration(milliseconds: 90),
+                          curve: _index == i
+                              ? const Interval(0.25, 1, curve: Curves.easeOut)
+                              : Curves.linear,
+                          child: AnimatedScale(
+                            scale: _index == i ? 1 : 0.96,
+                            duration: const Duration(milliseconds: 320),
+                            curve: const Interval(0.25, 1,
+                                curve: Curves.easeOutCubic),
+                            child: TickerMode(
+                              enabled: _index == i,
+                              child: _pages[i],
+                            ),
                           ),
                         ),
                       ),
@@ -126,131 +115,16 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               ],
             ),
           ),
-          // Floating navigation dock overlay
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 20,
-            child: SafeArea(
-              top: false,
-              left: false,
-              right: false,
-              child: Center(
-                child: BeamBorder(
-                  borderRadius: 36,
-                  palette: BeamPalette.mono,
-                  strength: 0.6,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(36),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHigh
-                              .withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(36),
-                          border: Border.all(
-                            color: colorScheme.outlineVariant,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.14),
-                              blurRadius: 24,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 8),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (int i = 0; i < _items.length; i++)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                child: _PillNavItem(
-                                  data: _items[i],
-                                  selected: _index == i,
-                                  compact: MediaQuery.sizeOf(context).width < 400,
-                                  onTap: () => _onDestinationSelected(i),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FloatingNavBar(
+              tabs: _tabs,
+              selectedIndex: _index,
+              visible: _navVisible,
+              onSelect: _select,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// A single destination in the floating pill nav bar with icon and text label.
-class _PillNavItem extends StatelessWidget {
-  const _PillNavItem({
-    required this.data,
-    required this.selected,
-    required this.compact,
-    required this.onTap,
-  });
-
-  final _NavItemData data;
-  final bool selected;
-  final bool compact;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Semantics(
-      label: data.tooltip,
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(28),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          padding: EdgeInsets.symmetric(
-            horizontal: selected ? (compact ? 8 : 14) : (compact ? 6 : 12),
-            vertical: 10,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            color: selected ? colorScheme.inverseSurface : Colors.transparent,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                selected ? data.selectedIcon : data.icon,
-                size: 22,
-                color: selected
-                    ? colorScheme.onInverseSurface
-                    : colorScheme.onSurface,
-              ),
-              if (selected) ...[
-                const SizedBox(width: 6),
-                Text(
-                  data.label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onInverseSurface,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/achievement.dart';
+import 'glass_card.dart';
 
 /// Card showing one achievement badge and how close it is to unlocking.
 ///
@@ -45,87 +46,90 @@ class AchievementTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final unlocked = achievement.unlocked;
 
-    final content = Opacity(
-      opacity: unlocked ? 1.0 : 0.55,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: unlocked
-                    ? colorScheme.primaryContainer
-                    : colorScheme.surfaceContainerHighest,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _iconFor(achievement.metric),
-                size: 30,
-                color: unlocked
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              achievement.title,
-              textAlign: TextAlign.center,
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (unlocked) ...[
-              const SizedBox(height: 6),
-              Chip(
-                label: const Text('Unlocked'),
-                visualDensity: VisualDensity.compact,
-                backgroundColor: colorScheme.tertiaryContainer,
-                labelStyle: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onTertiaryContainer,
-                ),
-              ),
-            ],
-            const SizedBox(height: 6),
-            Text(
-              achievement.description,
-              textAlign: TextAlign.center,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(value: progress.clamp(0.0, 1.0)),
-          ],
-        ),
-      ),
-    );
-
     return Semantics(
       label:
           '${unlocked ? 'Unlocked' : 'Locked'} achievement: ${achievement.title}',
-      child: Card(
-        clipBehavior: Clip.antiAlias,
+      child: GlassCard(
+        padding: const EdgeInsets.all(18),
         child: Stack(
           children: [
-            content,
-            if (!unlocked)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Icon(
-                  Icons.lock,
-                  size: 20,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+            Opacity(
+              opacity: unlocked ? 1.0 : 0.6,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: unlocked
+                          ? colorScheme.primaryContainer
+                          : colorScheme.surfaceContainerHighest,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _iconFor(achievement.metric),
+                      size: 26,
+                      color: unlocked
+                          ? colorScheme.onPrimaryContainer
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    achievement.title,
+                    style: textTheme.titleMedium,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    achievement.description,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: unlocked ? 1.0 : progress.clamp(0.0, 1.0),
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        unlocked
+                            ? 'Done'
+                            : '${(progress.clamp(0.0, 1.0) * 100).round()}%',
+                        style: textTheme.labelMedium?.copyWith(
+                          color: unlocked
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Icon(
+                unlocked ? Icons.check_circle_rounded : Icons.lock_rounded,
+                size: 20,
+                color: unlocked
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),

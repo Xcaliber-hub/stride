@@ -7,18 +7,17 @@ import 'package:flutter/material.dart';
 
 import '../utils/formatters.dart';
 
-/// Animated ring showing today's steps against the daily goal.
-///
-/// The fill animates from 0 to the clamped progress on every rebuild.
-/// The center shows the step count, the goal, and the percentage in a
-/// tonal pill. Announced to assistive tech as a percentage of the goal.
+/// Today's steps against the daily goal, drawn like Flowstate's timer ring:
+/// a thick rounded track with a primary→tertiary sweep-gradient arc, a
+/// `titleMedium` label, the count in light `displayLarge` numerals and a
+/// short caption underneath. The arc springs in from 0 on every change.
 class GoalProgressRing extends StatelessWidget {
   /// Creates a progress ring for [steps] out of [goal].
   const GoalProgressRing({
     super.key,
     required this.steps,
     required this.goal,
-    this.size = 240,
+    this.size = 280,
   });
 
   /// Steps recorded today.
@@ -34,7 +33,9 @@ class GoalProgressRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final progress = goal <= 0 ? 0.0 : (steps / goal).clamp(0.0, 1.0);
+    final remaining = max(0, goal - steps);
 
     return Semantics(
       label: '${Formatters.percent(progress)} of daily goal',
@@ -48,110 +49,121 @@ class GoalProgressRing extends StatelessWidget {
             size: Size.square(size),
             painter: _RingPainter(
               progress: value,
-              trackColor: colorScheme.surfaceContainerHigh,
-              haloColor: colorScheme.primary.withValues(alpha: 0.2),
-              progressColor: colorScheme.primary,
+              trackColor: dark
+                  ? colorScheme.surfaceContainerHighest
+                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              primary: colorScheme.primary,
+              tertiary: colorScheme.tertiary,
             ),
-            child: SizedBox.square(
-              dimension: size,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    Formatters.steps(steps),
-                    style: textTheme.displayMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'of ${Formatters.steps(goal)} steps',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      Formatters.percent(value),
-                      style: textTheme.labelLarge?.copyWith(
-                        color: colorScheme.onSecondaryContainer,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: child,
           );
         },
+        child: SizedBox.square(
+          dimension: size,
+          child: Padding(
+            padding: EdgeInsets.all(size * 0.16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  progress >= 1 ? 'Goal reached' : 'Steps today',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    Formatters.steps(steps),
+                    style: textTheme.displayLarge,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                  ),
+                ),
+                Text(
+                  progress >= 1
+                      ? '${Formatters.percent(steps / max(goal, 1))} of ${Formatters.steps(goal)}'
+                      : '${Formatters.steps(remaining)} to go',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Paints the track and progress arcs of [GoalProgressRing].
+/// Paints the track and gradient progress arc of [GoalProgressRing].
 class _RingPainter extends CustomPainter {
   const _RingPainter({
     required this.progress,
     required this.trackColor,
-    required this.haloColor,
-    required this.progressColor,
+    required this.primary,
+    required this.tertiary,
   });
 
   final double progress;
   final Color trackColor;
-  final Color haloColor;
-  final Color progressColor;
+  final Color primary;
+  final Color tertiary;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const trackWidth = 24.0;
-    const arcWidth = 18.0;
-    const haloWidth = 30.0;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (min(size.width, size.height) - haloWidth) / 2;
-    final bounds = Rect.fromCircle(center: center, radius: radius);
+    const stroke = 18.0;
+    const pad = stroke + 6;
+    final rect = Rect.fromLTWH(
+      pad,
+      pad,
+      size.width - pad * 2,
+      size.height - pad * 2,
+    );
+    final center = rect.center;
 
-    final trackPaint = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = trackWidth;
+    canvas.drawArc(
+      rect,
+      0,
+      2 * pi,
+      false,
+      Paint()
+        ..color = trackColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
+    );
 
-    canvas.drawCircle(center, radius, trackPaint);
+    final sweep = 2 * pi * progress;
+    if (sweep < 0.02) return;
 
-    if (progress <= 0) return;
-
-    // A soft, wider outline sits under the solid arc.
-    final haloPaint = Paint()
-      ..color = haloColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = haloWidth
-      ..strokeCap = StrokeCap.round;
-    final progressPaint = Paint()
-      ..color = progressColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = arcWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(bounds, -pi / 2, 2 * pi * progress, false, haloPaint);
-    canvas.drawArc(bounds, -pi / 2, 2 * pi * progress, false, progressPaint);
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(-pi / 2);
+    canvas.translate(-center.dx, -center.dy);
+    canvas.drawArc(
+      rect,
+      0,
+      sweep,
+      false,
+      Paint()
+        ..shader = SweepGradient(
+          colors: [primary, tertiary, primary],
+        ).createShader(rect)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(covariant _RingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.trackColor != trackColor ||
-        oldDelegate.haloColor != haloColor ||
-        oldDelegate.progressColor != progressColor;
+        oldDelegate.primary != primary ||
+        oldDelegate.tertiary != tertiary;
   }
 }

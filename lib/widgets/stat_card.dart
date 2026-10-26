@@ -3,13 +3,12 @@
 
 import 'package:flutter/material.dart';
 
-import 'glow_card.dart';
+import 'glass_card.dart';
 
-/// A small tappable card showing one headline metric.
-///
-/// Layout: a small [icon] and the [label] sit on top, with the large [value]
-/// anchored at the bottom of the card. When [onTap] is provided the whole
-/// card ripples and is exposed to assistive tech as a button.
+/// One headline metric on a glass card, laid out like Flowstate's stat
+/// tiles: a small accent icon and `labelLarge` caption on top, the value in
+/// `headlineMedium` below. When [onTap] is provided the card ripples and is
+/// exposed to assistive tech as a button.
 class StatCard extends StatelessWidget {
   /// Creates a stat card with [label], [value] and [icon].
   const StatCard({
@@ -41,62 +40,89 @@ class StatCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final content = Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: Center(
-                  child: iconWidget ??
-                      Icon(icon, size: 20, color: colorScheme.onSurface),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-              maxLines: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-
     return MergeSemantics(
       child: Semantics(
         label: '$label: $value',
         button: onTap != null,
-        child: GlowCard(
-          intensity: 0.75,
-          clipBehavior: Clip.antiAlias,
-          child:
-              onTap == null ? content : InkWell(onTap: onTap, child: content),
+        child: GlassCard(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  SizedBox.square(
+                    dimension: 20,
+                    child: Center(
+                      child: iconWidget ??
+                          Icon(icon, size: 20, color: colorScheme.primary),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child:
+                    Text(value, style: textTheme.headlineMedium, maxLines: 1),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// Lays cards out two per row with Flowstate's 16 dp gaps; cards in a row
+/// share the height of the tallest one.
+class StatGrid extends StatelessWidget {
+  const StatGrid({super.key, required this.children, this.spacing = 16});
+
+  /// The cards, in reading order.
+  final List<Widget> children;
+
+  /// Gap between cards in both directions.
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (var i = 0; i < children.length; i += 2) {
+      if (rows.isNotEmpty) rows.add(SizedBox(height: spacing));
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: children[i]),
+              SizedBox(width: spacing),
+              Expanded(
+                child: i + 1 < children.length
+                    ? children[i + 1]
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: rows,
     );
   }
 }

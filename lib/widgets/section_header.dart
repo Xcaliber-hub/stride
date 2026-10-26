@@ -3,12 +3,18 @@
 
 import 'package:flutter/material.dart';
 
-/// Section heading row: bold [title] with an optional trailing [action].
-///
-/// Used to label content sections (charts, lists) on the screens.
+/// Card heading in the Flowstate style: a `titleMedium` label at the top of
+/// a glass card (or `titleLarge` for settings groups via [large]), with an
+/// optional trailing [action].
 class SectionHeader extends StatelessWidget {
   /// Creates a section header with [title] and an optional [action].
-  const SectionHeader({super.key, required this.title, this.action});
+  const SectionHeader({
+    super.key,
+    required this.title,
+    this.action,
+    this.large = false,
+    this.padding = const EdgeInsets.only(bottom: 12),
+  });
 
   /// Section title text.
   final String title;
@@ -16,20 +22,28 @@ class SectionHeader extends StatelessWidget {
   /// Trailing widget, e.g. a "See all" TextButton.
   final Widget? action;
 
+  /// Uses `titleLarge`, as Flowstate's settings group titles do.
+  final bool large;
+
+  /// Space around the header.
+  final EdgeInsetsGeometry padding;
+
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+      padding: padding,
       child: Row(
         children: [
-          Text(
-            title,
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.w700),
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: large ? textTheme.titleLarge : textTheme.titleMedium,
+              ),
+            ),
           ),
-          const Spacer(),
           if (action != null) action!,
         ],
       ),

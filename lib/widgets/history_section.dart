@@ -8,9 +8,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../models/day_record.dart';
 import '../utils/formatters.dart';
 import '../viewmodels/providers.dart';
-import 'glow_card.dart';
+import 'glass_card.dart';
 import 'section_header.dart';
-import 'stat_card.dart';
 
 /// Calendar with per-day activity and a detail card, designed to be
 /// embedded at the bottom of the dashboard (no own scroll view).
@@ -49,142 +48,200 @@ class _HistorySectionState extends ConsumerState<HistorySection> {
         };
         final selectedRecord = events[DayRecord.dateKeyFor(_selected)];
 
+        final textTheme = Theme.of(context).textTheme;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SectionHeader(title: 'History'),
-            GlowCard(
-              intensity: 0.8,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Semantics(
-                  label: 'Activity calendar',
-                  child: TableCalendar<DayRecord>(
-                    firstDay: DateTime(2020),
-                    lastDay: DateTime.now(),
-                    focusedDay: _focused,
-                    selectedDayPredicate: (day) => isSameDay(day, _selected),
-                    onDaySelected: (selected, focused) => setState(() {
-                      _selected = selected;
-                      _focused = focused;
-                    }),
-                    onPageChanged: (focused) =>
-                        setState(() => _focused = focused),
-                    eventLoader: (day) {
-                      final record = events[DayRecord.dateKeyFor(day)];
-                      return record == null ? const [] : [record];
-                    },
-                    calendarStyle: CalendarStyle(
-                      todayDecoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      selectedDecoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      markerDecoration: BoxDecoration(
-                        color: colorScheme.secondary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    calendarBuilders: CalendarBuilders(
-                      markerBuilder: (context, date, dayEvents) {
-                        if (dayEvents.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        final record = dayEvents.first;
-                        if (record.steps <= 0) {
-                          return const SizedBox.shrink();
-                        }
-                        final progress = (record.steps / profile.dailyGoal)
-                            .clamp(0.0, 1.0);
-                        return Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 6),
-                            height: 4,
-                            width: 16 * progress + 2,
-                            decoration: BoxDecoration(
-                              color: progress >= 1.0
-                                  ? Colors.green
-                                  : colorScheme.primary,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SectionHeader(
-              title: Formatters.date(_selected),
-            ),
-            if (selectedRecord == null)
-              GlowCard(
-                intensity: 0.7,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 40,
-                        color: colorScheme.onSurfaceVariant,
-                        semanticLabel: 'No data',
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No step data recorded for this day.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.3,
+            GlassCard(
+              padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  StatCard(
-                    label: 'Steps',
-                    value: Formatters.steps(selectedRecord.steps),
-                    icon: Icons.directions_walk,
+                  const SectionHeader(
+                    title: 'History',
+                    padding: EdgeInsets.fromLTRB(8, 0, 8, 4),
                   ),
-                  StatCard(
-                    label: 'Distance',
-                    value: Formatters.distance(
-                      selectedRecord.distanceMeters,
-                      profile.unitSystem,
+                  Semantics(
+                    label: 'Activity calendar',
+                    child: TableCalendar<DayRecord>(
+                      firstDay: DateTime(2020),
+                      lastDay: DateTime.now(),
+                      focusedDay: _focused,
+                      startingDayOfWeek: StartingDayOfWeek.monday,
+                      availableCalendarFormats: const {
+                        CalendarFormat.month: 'Month',
+                      },
+                      selectedDayPredicate: (day) => isSameDay(day, _selected),
+                      onDaySelected: (selected, focused) => setState(() {
+                        _selected = selected;
+                        _focused = focused;
+                      }),
+                      onPageChanged: (focused) =>
+                          setState(() => _focused = focused),
+                      eventLoader: (day) {
+                        final record = events[DayRecord.dateKeyFor(day)];
+                        return record == null ? const [] : [record];
+                      },
+                      headerStyle: HeaderStyle(
+                        formatButtonVisible: false,
+                        titleCentered: false,
+                        titleTextStyle: textTheme.titleSmall!.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        leftChevronIcon: Icon(Icons.chevron_left_rounded,
+                            color: colorScheme.onSurfaceVariant),
+                        rightChevronIcon: Icon(Icons.chevron_right_rounded,
+                            color: colorScheme.onSurfaceVariant),
+                        headerPadding: const EdgeInsets.fromLTRB(8, 4, 0, 8),
+                      ),
+                      daysOfWeekStyle: DaysOfWeekStyle(
+                        weekdayStyle: textTheme.labelSmall!.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        weekendStyle: textTheme.labelSmall!.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      calendarStyle: CalendarStyle(
+                        outsideDaysVisible: false,
+                        defaultTextStyle: textTheme.bodyMedium!,
+                        weekendTextStyle: textTheme.bodyMedium!,
+                        disabledTextStyle: textTheme.bodyMedium!.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.3),
+                        ),
+                        todayTextStyle: textTheme.bodyMedium!.copyWith(
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        selectedTextStyle: textTheme.bodyMedium!.copyWith(
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        todayDecoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          shape: BoxShape.circle,
+                        ),
+                        selectedDecoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        markerDecoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      calendarBuilders: CalendarBuilders(
+                        markerBuilder: (context, date, dayEvents) {
+                          if (dayEvents.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          final record = dayEvents.first;
+                          if (record.steps <= 0) {
+                            return const SizedBox.shrink();
+                          }
+                          final progress = (record.steps / profile.dailyGoal)
+                              .clamp(0.0, 1.0);
+                          return Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              height: 4,
+                              width: 16 * progress + 2,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withValues(
+                                  alpha: progress >= 1.0 ? 1 : 0.5,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    icon: Icons.route,
-                  ),
-                  StatCard(
-                    label: 'Calories',
-                    value: Formatters.calories(selectedRecord.calories),
-                    icon: Icons.local_fire_department,
-                  ),
-                  StatCard(
-                    label: 'Active time',
-                    value: Formatters.minutes(selectedRecord.activeMinutes),
-                    icon: Icons.timer,
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 16),
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SectionHeader(title: Formatters.date(_selected)),
+                  if (selectedRecord == null)
+                    Text(
+                      'No step data recorded for this day.',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        _DayMetric(
+                          label: 'Steps',
+                          value: Formatters.steps(selectedRecord.steps),
+                        ),
+                        _DayMetric(
+                          label: 'Distance',
+                          value: Formatters.distance(
+                            selectedRecord.distanceMeters,
+                            profile.unitSystem,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        _DayMetric(
+                          label: 'Calories',
+                          value: Formatters.calories(selectedRecord.calories),
+                        ),
+                        _DayMetric(
+                          label: 'Active time',
+                          value:
+                              Formatters.minutes(selectedRecord.activeMinutes),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+/// One label/value pair in the selected-day card.
+class _DayMetric extends StatelessWidget {
+  const _DayMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Expanded(
+      child: MergeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(value, style: textTheme.titleLarge),
+          ],
+        ),
+      ),
     );
   }
 }

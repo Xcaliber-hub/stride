@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/user_profile.dart';
 import '../utils/formatters.dart';
+import '../themes/app_theme.dart';
 import '../viewmodels/providers.dart';
+import '../widgets/glass_card.dart';
 
 /// First-run onboarding: welcome, daily goal, and optional profile details.
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -118,7 +120,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         color: _page == i
                             ? colorScheme.primary
                             : colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
                 ],
@@ -130,289 +132,308 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _welcomePage(BuildContext context, ColorScheme colorScheme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 40),
-          Icon(
-            Icons.directions_walk,
-            size: 96,
-            color: colorScheme.primary,
-            semanticLabel: 'Walking person',
+  /// Shared page frame: Flowstate's 20 dp padding and 720 dp width cap.
+  Widget _frame(List<Widget> children) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppTheme.maxContentWidth),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(height: 16),
+                Entrance(index: i, child: children[i]),
+              ],
+            ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Welcome to\nStride',
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .headlineMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'A free and open-source step counter. '
-            'No accounts, no ads, no tracking — just your steps.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            color: colorScheme.secondaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.privacy_tip_outlined,
-                    color: colorScheme.onSecondaryContainer,
-                    semanticLabel: 'Privacy',
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'To count your steps, the app uses your device\u2019s '
-                      'activity-recognition sensor. You\u2019ll be asked for '
-                      'permission next — your step data never leaves this '
-                      'device.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSecondaryContainer,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-          FilledButton(
-            onPressed: () => _goTo(1),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-              child: Text('Get started'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
+  }
+
+  Widget _heading(BuildContext context, String title, String subtitle) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(title, style: textTheme.headlineLarge),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          subtitle,
+          style: textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _navRow({
+    required VoidCallback? onBack,
+    required String nextLabel,
+    required VoidCallback onNext,
+  }) {
+    return Row(
+      children: [
+        if (onBack != null) ...[
+          Expanded(
+            child: OutlinedButton(
+              onPressed: onBack,
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 60)),
+              child: const Text('Back'),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: FilledButton(
+            onPressed: onNext,
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 60)),
+            child: Text(nextLabel),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _welcomePage(BuildContext context, ColorScheme colorScheme) {
+    final textTheme = Theme.of(context).textTheme;
+    return _frame([
+      const SizedBox(height: 24),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          width: 88,
+          height: 88,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: SweepGradient(
+              colors: [
+                colorScheme.primary,
+                colorScheme.tertiary,
+                colorScheme.primary,
+              ],
+            ),
+          ),
+          child: Icon(
+            Icons.directions_walk_rounded,
+            size: 44,
+            color: colorScheme.onPrimary,
+            semanticLabel: 'Walking person',
+          ),
+        ),
+      ),
+      _heading(
+        context,
+        'Welcome to Stride',
+        'A free and open-source step counter. '
+            'No ads, no tracking \u2014 just your steps.',
+      ),
+      GlassCard(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.privacy_tip_rounded,
+              size: 20,
+              color: colorScheme.primary,
+              semanticLabel: 'Privacy',
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'To count your steps, the app uses your device\u2019s '
+                'activity-recognition sensor. You\u2019ll be asked for '
+                'permission next \u2014 your step data never leaves this '
+                'device.',
+                style: textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+      FilledButton.icon(
+        onPressed: () => _goTo(1),
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(64)),
+        icon: const Icon(Icons.arrow_forward_rounded),
+        label: Text('Get started',
+            style: textTheme.titleMedium?.copyWith(
+              color: colorScheme.onPrimary,
+            )),
+      ),
+    ]);
   }
 
   Widget _goalPage(BuildContext context, ColorScheme colorScheme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 40),
-          Icon(
-            Icons.flag_outlined,
-            size: 72,
-            color: colorScheme.primary,
-            semanticLabel: 'Goal flag',
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Set your daily goal',
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You can change this any time in Settings.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            Formatters.steps(_goal.round()),
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
-                ),
-          ),
-          Text(
-            'steps per day',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 16),
-          Semantics(
-            label: 'Daily step goal',
-            value: '${_goal.round()} steps',
-            child: Slider(
-              value: _goal,
-              min: 1000,
-              max: 30000,
-              divisions: 58,
-              label: Formatters.steps(_goal.round()),
-              onChanged: (value) => setState(() => _goal = value),
-            ),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'Unit system',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          Semantics(
-            label: 'Unit system',
-            child: SegmentedButton<UnitSystem>(
-              segments: const [
-                ButtonSegment(
-                  value: UnitSystem.metric,
-                  label: Text('Metric'),
-                ),
-                ButtonSegment(
-                  value: UnitSystem.imperial,
-                  label: Text('Imperial'),
-                ),
-              ],
-              selected: {_units},
-              onSelectionChanged: (selected) =>
-                  setState(() => _units = selected.first),
-            ),
-          ),
-          const SizedBox(height: 40),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () => _goTo(0),
-                child: const Text('Back'),
-              ),
-              FilledButton(
-                onPressed: () => _goTo(2),
-                child: const Text('Continue'),
-              ),
-            ],
-          ),
-        ],
+    final textTheme = Theme.of(context).textTheme;
+    return _frame([
+      _heading(
+        context,
+        'Daily goal',
+        'You can change this any time in Settings.',
       ),
-    );
+      GlassCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Steps per day',
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              Formatters.steps(_goal.round()),
+              style: textTheme.displayMedium,
+            ),
+            const SizedBox(height: 8),
+            Semantics(
+              label: 'Daily step goal',
+              value: '${_goal.round()} steps',
+              child: Slider(
+                value: _goal,
+                min: 1000,
+                max: 30000,
+                divisions: 58,
+                label: Formatters.steps(_goal.round()),
+                onChanged: (value) => setState(() => _goal = value),
+              ),
+            ),
+          ],
+        ),
+      ),
+      GlassCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Units', style: textTheme.titleMedium),
+            const SizedBox(height: 12),
+            Semantics(
+              label: 'Unit system',
+              child: SegmentedButton<UnitSystem>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                    value: UnitSystem.metric,
+                    label: Text('Metric'),
+                  ),
+                  ButtonSegment(
+                    value: UnitSystem.imperial,
+                    label: Text('Imperial'),
+                  ),
+                ],
+                selected: {_units},
+                onSelectionChanged: (selected) =>
+                    setState(() => _units = selected.first),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+      _navRow(
+        onBack: () => _goTo(0),
+        nextLabel: 'Continue',
+        onNext: () => _goTo(2),
+      ),
+    ]);
   }
 
   Widget _profilePage(BuildContext context, ColorScheme colorScheme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 40),
-          Icon(
-            Icons.person_outline,
-            size: 72,
-            color: colorScheme.primary,
-            semanticLabel: 'Person',
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'About you',
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your name personalizes greetings and is used as your display name '
+    return _frame([
+      _heading(
+        context,
+        'About you',
+        'Your name personalizes greetings and is used as your display name '
             'if you create or join a private group. Other details are optional '
             'and used only for calorie and distance estimates, stored on-device.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _nameController,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.next,
-            maxLength: 40,
-            autofillHints: const [AutofillHints.name],
-            decoration: const InputDecoration(
-              labelText: 'Your name',
-              border: OutlineInputBorder(),
+      ),
+      GlassCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              maxLength: 40,
+              autofillHints: const [AutofillHints.name],
+              decoration: const InputDecoration(labelText: 'Your name'),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _ageController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Age',
-              suffixText: 'years',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _heightController,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Height',
-              suffixText: _units == UnitSystem.imperial ? 'ft' : 'cm',
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _weightController,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Weight',
-              suffixText: _units == UnitSystem.imperial ? 'lb' : 'kg',
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<Gender?>(
-            initialValue: _gender,
-            decoration: const InputDecoration(
-              labelText: 'Gender',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem<Gender?>(
-                value: null,
-                child: Text('Prefer not to say'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _ageController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Age',
+                suffixText: 'years',
               ),
-              for (final g in Gender.values)
-                DropdownMenuItem<Gender?>(
-                  value: g,
-                  child: Text(
-                    g.name[0].toUpperCase() + g.name.substring(1),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _heightController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Height',
+                      suffixText: _units == UnitSystem.imperial ? 'ft' : 'cm',
+                    ),
                   ),
                 ),
-            ],
-            onChanged: (value) => setState(() => _gender = value),
-          ),
-          const SizedBox(height: 40),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () => _goTo(1),
-                child: const Text('Back'),
-              ),
-              FilledButton(
-                onPressed: _finish,
-                child: const Text('Start tracking'),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _weightController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Weight',
+                      suffixText: _units == UnitSystem.imperial ? 'lb' : 'kg',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<Gender?>(
+              initialValue: _gender,
+              borderRadius: BorderRadius.circular(16),
+              decoration: const InputDecoration(labelText: 'Gender'),
+              items: [
+                const DropdownMenuItem<Gender?>(
+                  value: null,
+                  child: Text('Prefer not to say'),
+                ),
+                for (final g in Gender.values)
+                  DropdownMenuItem<Gender?>(
+                    value: g,
+                    child: Text(
+                      g.name[0].toUpperCase() + g.name.substring(1),
+                    ),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _gender = value),
+            ),
+          ],
+        ),
       ),
-    );
+      const SizedBox(height: 8),
+      _navRow(
+        onBack: () => _goTo(1),
+        nextLabel: 'Start tracking',
+        onNext: _finish,
+      ),
+    ]);
   }
 }

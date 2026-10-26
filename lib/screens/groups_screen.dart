@@ -11,7 +11,11 @@ import '../models/day_record.dart';
 import '../services/firebase_service.dart';
 import '../services/group_service.dart';
 import '../viewmodels/providers.dart';
+import '../widgets/glass_card.dart';
 import '../widgets/page_title.dart';
+import '../widgets/screen_layout.dart';
+import '../widgets/section_header.dart';
+import '../widgets/settings_rows.dart';
 
 class GroupsScreen extends ConsumerWidget {
   const GroupsScreen({super.key});
@@ -44,32 +48,32 @@ class _FirebaseUnavailable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 120),
+    final textTheme = Theme.of(context).textTheme;
+    final muted = textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant);
+    return ScreenList(
       children: [
         const PageTitle(
           title: 'Groups',
           subtitle: 'Friends and live step counts',
         ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.cloud_off_outlined, size: 34, color: colors.primary),
-                const SizedBox(height: 12),
-                Text('Firebase setup needed', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                const Text(
-                  'Your step tracker is still working locally. To enable sign-in and private groups, set up a Firebase project, enable Email/Password Authentication and Cloud Firestore, then provide the Android Firebase options described in README.md.',
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'No account or cloud data is created until you configure Firebase. Age, height, weight, gender, step history, distance and calories are not sent to Firebase.',
-                ),
-              ],
-            ),
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.cloud_off_rounded, size: 28, color: colors.primary),
+              const SizedBox(height: 12),
+              Text('Firebase setup needed', style: textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                'Your step tracker is still working locally. To enable sign-in and private groups, set up a Firebase project, enable Email/Password Authentication and Cloud Firestore, then provide the Android Firebase options described in README.md.',
+                style: muted,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No account or cloud data is created until you configure Firebase. Age, height, weight, gender, step history, distance and calories are not sent to Firebase.',
+                style: muted,
+              ),
+            ],
           ),
         ),
       ],
@@ -155,104 +159,94 @@ class _AuthenticationPanelState extends State<_AuthenticationPanel> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 120),
+    final textTheme = Theme.of(context).textTheme;
+    return ScreenList(
       children: [
         const PageTitle(
           title: 'Groups',
           subtitle: 'Friends and live step counts',
         ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Icon(Icons.groups_2_outlined, size: 38, color: colors.primary),
-                const SizedBox(height: 10),
-                Text(
-                  _registering ? 'Create your Stride account' : 'Sign in to Stride',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge,
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                _registering ? 'Create your Stride account' : 'Sign in to your groups',
+                style: textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Use an account to create private groups or join friends. Your local step history remains on this device.',
+                style: textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+              if (_registering) ...[
+                TextField(
+                  controller: _displayName,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  maxLength: 40,
+                  decoration: const InputDecoration(
+                    labelText: 'Display name (optional)',
+                  ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Use an account to create private groups or join friends. Your local step history remains on this device.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                if (_registering) ...[
-                  TextField(
-                    controller: _displayName,
-                    textCapitalization: TextCapitalization.words,
-                    textInputAction: TextInputAction.next,
-                    maxLength: 40,
-                    decoration: const InputDecoration(
-                      labelText: 'Display name (optional)',
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                TextField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                ),
+              ],
+              TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _password,
+                obscureText: true,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.password],
+                onSubmitted: (_) {
+                  if (!_busy) _submit();
+                },
+                decoration: const InputDecoration(labelText: 'Password'),
+              ),
+              if (_error != null) ...[
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _password,
-                  obscureText: true,
-                  textInputAction: TextInputAction.done,
-                  autofillHints: const [AutofillHints.password],
-                  onSubmitted: (_) {
-                    if (!_busy) _submit();
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                  ),
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
-                  Text(_error!, style: TextStyle(color: colors.error)),
-                ],
-                const SizedBox(height: 18),
-                FilledButton(
-                  onPressed: _busy ? null : _submit,
-                  child: _busy
-                      ? const SizedBox.square(
-                          dimension: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(_registering ? 'Create account' : 'Sign in'),
-                ),
-                TextButton(
-                  onPressed: _busy
-                      ? null
-                      : () => setState(() {
-                            _registering = !_registering;
-                            _error = null;
-                          }),
-                  child: Text(
-                    _registering
-                        ? 'Already have an account? Sign in'
-                        : 'New to Stride? Create an account',
-                  ),
+                Text(
+                  _error!,
+                  style: textTheme.bodySmall?.copyWith(color: colors.error),
                 ),
               ],
-            ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _busy ? null : _submit,
+                child: _busy
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(_registering ? 'Create account' : 'Sign in'),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: _busy
+                    ? null
+                    : () => setState(() {
+                          _registering = !_registering;
+                          _error = null;
+                        }),
+                child: Text(
+                  _registering
+                      ? 'Already have an account? Sign in'
+                      : 'New here? Create an account',
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        const Text(
-          'Your Settings name is your display name in private groups. Until you set one, Stride uses the name entered during registration. Only after you opt in will members see today’s step total and last-updated time.',
-          textAlign: TextAlign.center,
+        Text(
+          'Your Settings name is your display name in private groups. Until you set one, Stride uses the name entered during registration. Only after you opt in will members see today\u2019s step total and last-updated time.',
+          style: textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
         ),
       ],
     );
@@ -458,140 +452,140 @@ class _SignedInGroups extends ConsumerWidget {
     final groups = ref.watch(myGroupsProvider(user.uid));
     final sharing = ref.watch(sharingOptInProvider(user.uid));
     final colors = Theme.of(context).colorScheme;
-    return ListView(
-      padding: EdgeInsets.fromLTRB(16, 18, 16, 112 + MediaQuery.of(context).padding.bottom),
+    final textTheme = Theme.of(context).textTheme;
+    final muted = textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant);
+    return ScreenList(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Semantics(
-                    header: true,
-                    child: Text('Groups', style: PageTitle.titleStyle(context)),
-                  ),
-                  Text(
-                    user.email ?? user.displayName ?? 'Signed in',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              tooltip: 'Sign out',
-              onPressed: () => _signOut(context, ref),
-              icon: const Icon(Icons.logout_outlined),
-            ),
-          ],
+        PageTitle(
+          title: 'Groups',
+          subtitle: user.email ?? user.displayName ?? 'Signed in',
+          trailing: IconButton(
+            tooltip: 'Sign out',
+            onPressed: () => _signOut(context, ref),
+            icon: const Icon(Icons.logout_rounded),
+          ),
         ),
-        const SizedBox(height: 18),
-        Card(
+        GlassCard(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SectionHeader(title: 'Step sharing', large: true),
               sharing.when(
-                loading: () => const ListTile(
-                  leading: Icon(Icons.lock_outline),
-                  title: Text('Step sharing'),
-                  subtitle: Text('Loading your privacy setting…'),
+                loading: () => Text('Loading your privacy setting\u2026', style: muted),
+                error: (error, _) => Text(
+                  'Step sharing setting unavailable: $error',
+                  style: textTheme.bodySmall?.copyWith(color: colors.error),
                 ),
-                error: (error, _) => ListTile(
-                  leading: const Icon(Icons.error_outline),
-                  title: const Text('Step sharing setting unavailable'),
-                  subtitle: Text('$error'),
-                ),
-                data: (enabled) => SwitchListTile.adaptive(
-                  secondary: const Icon(Icons.directions_walk_outlined),
-                  title: const Text('Share today’s steps'),
-                  subtitle: Text(
-                    enabled
-                        ? 'Sharing only today’s total and its update time with group members.'
-                        : 'Off. Your steps are not visible to group members.',
-                  ),
+                data: (enabled) => ToggleRow(
+                  title: 'Share today\u2019s steps',
+                  subtitle: enabled
+                      ? 'Sharing only today\u2019s total and its update time with group members.'
+                      : 'Off. Your steps are not visible to group members.',
                   value: enabled,
                   onChanged: (value) => _setSharing(context, ref, value),
                 ),
               ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
-                child: Text(
-                  'Your Settings name is shown to private-group members. Age, height, weight, gender, step history, distance, calories and goals stay on this device. Turning sharing off removes your shared step count from every group.',
-                ),
+              const SizedBox(height: 14),
+              Text(
+                'Your Settings name is shown to private-group members. Age, height, weight, gender, step history, distance, calories and goals stay on this device. Turning sharing off removes your shared step count from every group.',
+                style: muted,
               ),
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(child: Text('Your groups', style: Theme.of(context).textTheme.titleLarge)),
-            IconButton.filledTonal(
-              tooltip: 'Join with invite code',
-              onPressed: () => _joinGroup(context, ref),
-              icon: const Icon(Icons.key_outlined),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              tooltip: 'Create group',
-              onPressed: () => _createGroup(context, ref),
-              icon: const Icon(Icons.add),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        groups.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(28),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (error, _) => _ErrorPanel(message: 'Could not load your groups: $error'),
-          data: (items) => items.isEmpty
-              ? Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(22),
-                    child: Column(
-                      children: [
-                        Icon(Icons.group_add_outlined, size: 36, color: colors.primary),
-                        const SizedBox(height: 10),
-                        Text('No groups yet', style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 6),
-                        const Text('Create a private group or join a friend with an invite code.', textAlign: TextAlign.center),
-                      ],
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SectionHeader(title: 'Your groups', large: true),
+              groups.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, _) => Text(
+                  'Could not load your groups: $error',
+                  style: textTheme.bodyMedium?.copyWith(color: colors.error),
+                ),
+                data: (items) => items.isEmpty
+                    ? Text(
+                        'Create a private group or join a friend with an invite code.',
+                        style: textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                      )
+                    : Column(
+                        children: [
+                          for (final group in items)
+                            InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => GroupDetailScreen(group: group, currentUid: user.uid),
+                                ),
+                              ),
+                              onLongPress: () => _createInvite(context, ref, group),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 22,
+                                      backgroundColor: colors.primaryContainer,
+                                      foregroundColor: colors.onPrimaryContainer,
+                                      child: Text(
+                                        group.name.isEmpty
+                                            ? '?'
+                                            : String.fromCharCode(group.name.runes.first).toUpperCase(),
+                                        style: textTheme.titleMedium?.copyWith(color: colors.onPrimaryContainer),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(group.name, style: textTheme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                          Text('Private \u00b7 members only', style: muted),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _createGroup(context, ref),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Create'),
                     ),
                   ),
-                )
-              : Column(
-                  children: [
-                    for (final group in items)
-                      Card(
-                        clipBehavior: Clip.antiAlias,
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: colors.primaryContainer,
-                            foregroundColor: colors.onPrimaryContainer,
-                            child: const Icon(Icons.groups_2_outlined),
-                          ),
-                          title: Text(group.name),
-                          subtitle: const Text('Private · members only'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => GroupDetailScreen(group: group, currentUid: user.uid),
-                            ),
-                          ),
-                          onLongPress: () => _createInvite(context, ref, group),
-                        ),
-                      ),
-                  ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _joinGroup(context, ref),
+                      icon: const Icon(Icons.key_rounded),
+                      label: const Text('Join'),
+                    ),
+                  ),
+                ],
+              ),
+              if (groups.valueOrNull?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Open a group to see members. Long-press a group or open it to create an invite.',
+                  style: muted,
                 ),
+              ],
+            ],
+          ),
         ),
-        if (groups.valueOrNull?.isNotEmpty == true) ...[
-          const SizedBox(height: 4),
-          const Text('Open a group to see members. Long-press a group or open it to create an invite.', textAlign: TextAlign.center),
-        ],
       ],
     );
   }
@@ -652,6 +646,9 @@ class GroupDetailScreen extends ConsumerWidget {
             DayRecord.dateKeyFor(item.updatedAt!.toLocal()) == todayKey)
           item.uid: item,
     };
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final muted = textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant);
 
     return Scaffold(
       appBar: AppBar(
@@ -660,68 +657,101 @@ class GroupDetailScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Invite a friend',
             onPressed: () => _invite(context, ref),
-            icon: const Icon(Icons.person_add_alt_1_outlined),
+            icon: const Icon(Icons.person_add_alt_1_rounded),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      body: ScreenList(
+        topPadding: 8,
+        bottomClearance: 28,
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(Icons.lock_outline, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text('Only group members can view the roster and opted-in step totals.'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text('Today', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          sharedSteps.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (error, _) => _ErrorPanel(message: 'Could not load shared steps: $error'),
-            data: (_) => const SizedBox.shrink(),
-          ),
-          members.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(28),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (error, _) => _ErrorPanel(message: 'Could not load members: $error'),
-            data: (items) => Column(
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final member in items)
-                  Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          member.displayName.isEmpty
-                              ? '?'
-                              : String.fromCharCode(member.displayName.runes.first).toUpperCase(),
-                        ),
+                OutlinedButton(
+                  onPressed: () => _invite(context, ref),
+                  child: const Text('Invite friends'),
+                ),
+                const SizedBox(height: 8),
+                Text(group.name, style: textTheme.headlineMedium),
+                Text(
+                  '${members.valueOrNull?.length ?? 0} members \u00b7 Private',
+                  style: textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.lock_rounded, size: 18, color: colors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Only group members can view the roster and opted-in step totals.',
+                        style: muted,
                       ),
-                      title: Text('${member.displayName}${member.uid == currentUid ? ' (you)' : ''}'),
-                      subtitle: _stepSubtitle(stepsByUid[member.uid]),
-                      trailing: stepsByUid.containsKey(member.uid)
-                          ? Text(
-                              NumberFormat.decimalPattern().format(stepsByUid[member.uid]!.steps),
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                            )
-                          : const Icon(Icons.visibility_off_outlined),
                     ),
-                  ),
+                  ],
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          const Text('A member who has not opted in, or whose total has not been updated today, appears as “Not shared today.”'),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SectionHeader(title: 'Today', large: true, padding: EdgeInsets.zero),
+                Text(DateFormat('EEEE, d MMMM').format(DateTime.now()), style: muted),
+                sharedSteps.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: LinearProgressIndicator(minHeight: 4),
+                  ),
+                  error: (error, _) => Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text('Could not load shared steps: $error',
+                        style: textTheme.bodySmall?.copyWith(color: colors.error)),
+                  ),
+                  data: (_) => const SizedBox.shrink(),
+                ),
+                members.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(28),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (error, _) => Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text('Could not load members: $error',
+                        style: textTheme.bodyMedium?.copyWith(color: colors.error)),
+                  ),
+                  data: (items) {
+                    // Leaderboard order: shared totals first, highest steps on top.
+                    final sorted = [...items]..sort((a, b) {
+                        final sa = stepsByUid[a.uid]?.steps ?? -1;
+                        final sb = stepsByUid[b.uid]?.steps ?? -1;
+                        if (sa != sb) return sb.compareTo(sa);
+                        return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+                      });
+                    return Column(
+                      children: [
+                        for (var i = 0; i < sorted.length; i++)
+                          _MemberRow(
+                            rank: i + 1,
+                            member: sorted[i],
+                            shared: stepsByUid[sorted[i].uid],
+                            self: sorted[i].uid == currentUid,
+                            subtitle: _stepSubtitle(stepsByUid[sorted[i].uid]),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          Text(
+            'A member who has not opted in, or whose total has not been updated today, appears as \u201cNot shared today.\u201d',
+            style: muted,
+          ),
         ],
       ),
     );
@@ -734,16 +764,114 @@ class GroupDetailScreen extends ConsumerWidget {
   }
 }
 
+/// One leaderboard row, styled like Flowstate's weekly board: rank, avatar
+/// (gold/silver/bronze ring for the top three sharers), name and today's
+/// total; the signed-in member's row is highlighted.
+class _MemberRow extends StatelessWidget {
+  const _MemberRow({
+    required this.rank,
+    required this.member,
+    required this.shared,
+    required this.self,
+    required this.subtitle,
+  });
+
+  final int rank;
+  final GroupMember member;
+  final SharedStepCount? shared;
+  final bool self;
+  final Widget subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final ring = shared == null
+        ? null
+        : switch (rank) {
+            1 => const Color(0xFFFFC107),
+            2 => const Color(0xFFB0BEC5),
+            3 => const Color(0xFFB87333),
+            _ => null,
+          };
+    final initial = member.displayName.isEmpty
+        ? '?'
+        : String.fromCharCode(member.displayName.runes.first).toUpperCase();
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: self ? const EdgeInsets.all(6) : EdgeInsets.zero,
+      decoration: self
+          ? BoxDecoration(
+              color: colors.primaryContainer.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(16),
+            )
+          : null,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 30,
+            child: Text(
+              '$rank',
+              semanticsLabel: 'Rank $rank',
+              style: textTheme.titleMedium,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: ring == null ? null : Border.all(color: ring, width: 2),
+            ),
+            child: CircleAvatar(
+              radius: 17,
+              backgroundColor: colors.primaryContainer,
+              foregroundColor: colors.onPrimaryContainer,
+              child: Text(initial),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${member.displayName}${self ? ' \u00b7 You' : ''}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleSmall,
+                ),
+                DefaultTextStyle.merge(
+                  style: textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                  child: subtitle,
+                ),
+              ],
+            ),
+          ),
+          if (shared != null)
+            Text(
+              NumberFormat.decimalPattern().format(shared!.steps),
+              style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            )
+          else
+            Icon(Icons.visibility_off_rounded, size: 20, color: colors.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
+}
+
 class _ErrorPanel extends StatelessWidget {
   const _ErrorPanel({required this.message});
   final String message;
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        ),
+  Widget build(BuildContext context) => ScreenList(
+        children: [
+          const PageTitle(title: 'Groups'),
+          GlassCard(
+            child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
       );
 }
 

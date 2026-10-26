@@ -5,16 +5,17 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../models/day_record.dart';
 import '../utils/formatters.dart';
 import '../utils/stats_calculator.dart';
 import '../viewmodels/providers.dart';
-import '../widgets/glow_card.dart';
+import '../widgets/glass_card.dart';
 import '../widgets/page_title.dart';
 import '../widgets/goal_progress_ring.dart';
 import '../widgets/history_section.dart';
-import '../widgets/section_header.dart';
+import '../widgets/screen_layout.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/streak_flame_icon.dart';
 
@@ -88,7 +89,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final streak = _lastKnownStreak ?? 0;
     final streakDataReady = _lastKnownStreak != null;
 
+    final allDays = ref.watch(allDaysProvider).valueOrNull;
+
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Stack(
       children: [
@@ -106,134 +110,106 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           data: (record) {
             final progress = _progressOf(record, profile.dailyGoal);
             final name = profile.name.trim();
-            final date = Formatters.date(DateTime.now());
+            final date = DateFormat('EEEE, d MMMM').format(DateTime.now());
             final subtitle = name.isEmpty ? date : '$name \u00b7 $date';
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                16,
-                16,
-                100 + MediaQuery.of(context).padding.bottom,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  PageTitle(title: _greeting(), subtitle: subtitle),
-                  GlowCard(
-                    intensity: 0.9,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 28),
-                      child: Center(
-                        child: Semantics(
-                          label:
-                              '${Formatters.steps(record.steps)} of ${Formatters.steps(profile.dailyGoal)} steps',
-                          child: GoalProgressRing(
-                            steps: record.steps,
-                            goal: profile.dailyGoal,
-                          ),
+            return ScreenList(
+              children: [
+                PageTitle(title: _greeting(), subtitle: subtitle),
+                GlassCard(
+                  child: Center(
+                    child: Semantics(
+                      label:
+                          '${Formatters.steps(record.steps)} of ${Formatters.steps(profile.dailyGoal)} steps',
+                      child: GoalProgressRing(
+                        steps: record.steps,
+                        goal: profile.dailyGoal,
+                      ),
+                    ),
+                  ),
+                ),
+                if (sensor.valueOrNull == false)
+                  GlassCard(
+                    color: colorScheme.errorContainer.withValues(alpha: 0.6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.sensors_off_rounded,
+                          color: colorScheme.onErrorContainer,
+                          semanticLabel: 'Sensor warning',
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  GlowCard(
-                    intensity: progress >= 1.0 ? 1.0 : 0.85,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(
-                            progress >= 1.0
-                                ? Icons.celebration
-                                : Icons.directions_walk,
-                            color: colorScheme.primary,
-                            semanticLabel: 'Motivation',
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _motivation(progress),
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (sensor.valueOrNull == false)
-                    Card(
-                      color: colorScheme.errorContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.sensors_off,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Step sensor unavailable on this device \u2014 '
+                            'past data is still shown.',
+                            style: textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onErrorContainer,
-                              semanticLabel: 'Sensor warning',
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Step sensor unavailable on this device — '
-                                'past data is still shown.',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: colorScheme.onErrorContainer,
-                                    ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                StatGrid(
+                  children: [
+                    StatCard(
+                      label: 'Distance',
+                      value: Formatters.distance(
+                        record.distanceMeters,
+                        profile.unitSystem,
+                      ),
+                      icon: Icons.route_rounded,
+                    ),
+                    StatCard(
+                      label: 'Streak',
+                      value: '$streak ${streak == 1 ? 'day' : 'days'}',
+                      icon: Icons.local_fire_department_rounded,
+                      iconWidget: StreakFlameIcon(
+                        streak: streak,
+                        dataReady: streakDataReady,
+                        size: 20,
                       ),
                     ),
-                  if (sensor.valueOrNull == false) const SizedBox(height: 16),
-                  const SectionHeader(title: 'Today at a glance'),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.3,
+                    StatCard(
+                      label: 'Calories',
+                      value: Formatters.calories(record.calories),
+                      icon: Icons.bolt_rounded,
+                    ),
+                    StatCard(
+                      label: 'Active time',
+                      value: Formatters.minutes(record.activeMinutes),
+                      icon: Icons.timer_rounded,
+                    ),
+                  ],
+                ),
+                _GoalCard(
+                  steps: record.steps,
+                  goal: profile.dailyGoal,
+                  days: allDays,
+                  today: record,
+                ),
+                GlassCard(
+                  child: Row(
                     children: [
-                      StatCard(
-                        label: 'Distance',
-                        value: Formatters.distance(
-                          record.distanceMeters,
-                          profile.unitSystem,
-                        ),
-                        icon: Icons.route,
+                      Icon(
+                        progress >= 1.0
+                            ? Icons.celebration_rounded
+                            : Icons.directions_walk_rounded,
+                        color: colorScheme.primary,
+                        semanticLabel: 'Motivation',
                       ),
-                      StatCard(
-                        label: 'Calories',
-                        value: Formatters.calories(record.calories),
-                        icon: Icons.local_fire_department,
-                      ),
-                      StatCard(
-                        label: 'Active time',
-                        value: Formatters.minutes(record.activeMinutes),
-                        icon: Icons.timer,
-                      ),
-                      StatCard(
-                        label: 'Current streak',
-                        value: '$streak ${streak == 1 ? 'day' : 'days'}',
-                        icon: Icons.whatshot,
-                        iconWidget: StreakFlameIcon(
-                          streak: streak,
-                          dataReady: streakDataReady,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _motivation(progress),
+                          style: textTheme.titleMedium,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  const HistorySection(),
-                  const SizedBox(height: 16),
-                ],
-              ),
+                ),
+                const HistorySection(),
+              ],
             );
           },
         ),
@@ -252,6 +228,106 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Flowstate's "Today's goal" card: progress toward the daily goal and a row
+/// of seven dots, one per day of the past week, shaded by goal progress.
+class _GoalCard extends StatelessWidget {
+  const _GoalCard({
+    required this.steps,
+    required this.goal,
+    required this.days,
+    required this.today,
+  });
+
+  final int steps;
+  final int goal;
+  final List<DayRecord>? days;
+  final DayRecord today;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final ratio = goal > 0 ? (steps / goal).clamp(0.0, 1.0) : 0.0;
+    final byKey = <String, DayRecord>{
+      for (final d in days ?? const <DayRecord>[]) d.dateKey: d,
+      today.dateKey: today,
+    };
+    final now = DateTime.now();
+    final week = [
+      for (var i = 6; i >= 0; i--) DateTime(now.year, now.month, now.day - i),
+    ];
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text("Today's goal", style: textTheme.titleMedium),
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  '${Formatters.steps(steps)} of ${Formatters.steps(goal)}',
+                  style: textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: ratio,
+            minHeight: 10,
+            borderRadius: BorderRadius.circular(5),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'This week',
+            style: textTheme.titleSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (final day in week)
+                Builder(builder: (context) {
+                  final daySteps = byKey[DayRecord.dateKeyFor(day)]?.steps ?? 0;
+                  final fill =
+                      goal > 0 ? (daySteps / goal).clamp(0.0, 1.0) : 0.0;
+                  return Semantics(
+                    label:
+                        '${DateFormat.EEEE().format(day)}: ${Formatters.steps(daySteps)} steps',
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colorScheme.primary
+                                .withValues(alpha: 0.1 + 0.9 * fill),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat.E().format(day).substring(0, 1),
+                          style: textTheme.labelSmall,
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

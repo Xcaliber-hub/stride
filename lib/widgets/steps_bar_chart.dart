@@ -10,10 +10,13 @@ import 'package:intl/intl.dart';
 import '../models/day_record.dart';
 import '../utils/formatters.dart';
 
-/// Bar chart of daily step counts with a dashed line marking the goal.
+/// Bar chart of daily step counts in the Flowstate chart style: fully
+/// rounded capsule bars (62 % of each slot), no grid or axes, small
+/// `labelSmall` captions underneath and a spring-in reveal.
 ///
-/// Bars reaching [goal] use the primary color; the rest are dimmed.
-/// Tapping a bar shows a tooltip with the formatted step count.
+/// Days that reach [goal] use the full primary colour, days below it a
+/// softer primary, and empty days a short neutral stub. A faint dashed line
+/// marks the goal. Tapping a bar shows a tooltip with the step count.
 /// Shows "No data yet" when [days] is empty.
 class StepsBarChart extends StatelessWidget {
   /// Creates a bar chart for [days] against [goal].
@@ -22,127 +25,153 @@ class StepsBarChart extends StatelessWidget {
   /// Day records in chronological order, one bar per entry.
   final List<DayRecord> days;
 
-  /// Daily step goal drawn as a horizontal line.
+  /// Daily step goal drawn as a faint horizontal line.
   final int goal;
+
+  static const double _chartHeight = 150;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     if (days.isEmpty) {
-      return const SizedBox(
-        height: 220,
-        child: Center(child: Text('No data yet')),
+      return SizedBox(
+        height: _chartHeight,
+        child: Center(
+          child: Text(
+            'No data yet',
+            style: textTheme.bodyMedium
+                ?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+        ),
       );
     }
 
-    final maxSteps = days.fold<int>(
-      0,
-      (max, day) => max > day.steps ? max : day.steps,
+    final maxSteps = days.fold<int>(0, (m, d) => max(m, d.steps));
+    final maxY = max(max(maxSteps, goal), 1).toDouble();
+    final track = dark
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.6);
+    final labelStyle = textTheme.labelSmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
     );
-    final maxY = max(maxSteps, goal) * 1.15;
 
-    return SizedBox(
-      height: 220,
-      child: BarChart(
-        BarChartData(
-          minY: 0,
-          maxY: maxY,
-          barGroups: [
-            for (var i = 0; i < days.length; i++)
-              BarChartGroupData(
-                x: i,
-                barRods: [
-                  BarChartRodData(
-                    toY: days[i].steps.toDouble(),
-                    color: days[i].steps >= goal
-                        ? colorScheme.primary
-                        : colorScheme.primary.withValues(alpha: 0.35),
-                    width: 16,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-          barTouchData: BarTouchData(
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                final day = days[group.x.toInt()];
-                return BarTooltipItem(
-                  '${Formatters.shortDate(day.date)}\n'
-                  '${Formatters.steps(day.steps)} steps',
-                  TextStyle(
-                    color: colorScheme.onInverseSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
-                );
-              },
-            ),
-          ),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (value) => FlLine(
-              color: colorScheme.outlineVariant,
-              strokeWidth: 1,
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          extraLinesData: ExtraLinesData(
-            horizontalLines: [
-              HorizontalLine(
-                y: goal.toDouble(),
-                color: colorScheme.tertiary,
-                strokeWidth: 1.5,
-                dashArray: const [6, 4],
-              ),
-            ],
-          ),
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            leftTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 38,
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  if (index < 0 || index >= days.length) {
-                    return const SizedBox.shrink();
-                  }
-                  final weekday =
-                      DateFormat.E().format(days[index].date)[0];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          weekday,
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                        Text(
-                          DateFormat('d').format(days[index].date),
-                          style: Theme.of(context).textTheme.labelSmall,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final slot = constraints.maxWidth / days.length;
+        final barWidth = slot * 0.62;
+        final stub = maxY * (4 / _chartHeight);
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.easeOutBack,
+          builder: (context, reveal, _) => SizedBox(
+            height: _chartHeight + 40,
+            child: BarChart(
+              duration: const Duration(milliseconds: 250),
+              BarChartData(
+                minY: 0,
+                maxY: maxY,
+                alignment: BarChartAlignment.spaceAround,
+                groupsSpace: 0,
+                barGroups: [
+                  for (var i = 0; i < days.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: days[i].steps > 0
+                              ? max(days[i].steps * reveal, stub)
+                              : stub,
+                          color: days[i].steps <= 0
+                              ? track
+                              : days[i].steps >= goal
+                                  ? colorScheme.primary
+                                  : colorScheme.primary.withValues(alpha: 0.55),
+                          width: barWidth,
+                          borderRadius: BorderRadius.circular(barWidth / 2),
                         ),
                       ],
                     ),
-                  );
-                },
+                ],
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => colorScheme.inverseSurface,
+                    tooltipRoundedRadius: 12,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final day = days[group.x.toInt()];
+                      return BarTooltipItem(
+                        '${Formatters.shortDate(day.date)}\n'
+                        '${Formatters.steps(day.steps)} steps',
+                        TextStyle(
+                          color: colorScheme.onInverseSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    if (goal > 0)
+                      HorizontalLine(
+                        y: goal.toDouble(),
+                        color: colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.35),
+                        strokeWidth: 1,
+                        dashArray: const [4, 4],
+                      ),
+                  ],
+                ),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt();
+                        if (index < 0 || index >= days.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final date = days[index].date;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.topCenter,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(DateFormat.E().format(date)[0],
+                                    style: labelStyle),
+                                Text(DateFormat('d').format(date),
+                                    style: labelStyle),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
